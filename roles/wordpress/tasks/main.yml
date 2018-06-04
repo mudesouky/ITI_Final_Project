@@ -1,0 +1,65 @@
+---
+  
+  - name: Make Project Directory
+    file:
+      path: ./Project
+      state: directory
+      mode: 0755
+
+  - name: Make Database Directory
+    file:
+      path: ./Project/database
+      state: directory
+      mode: 0755
+
+  - name: Download Wordpress
+    get_url:
+      url: http://wordpress.org/wordpress-4.9.6.tar.gz
+      dest: ./Project/wordpress-4.9.6.tar.gz
+      timeout: 100
+
+  - name: Extract wordpress.tar.gz into ./Project
+    command: tar -xzvf ./Project/wordpress-4.9.6.tar.gz -C ./Project
+
+  - name: Copy Dockerfile
+    copy:
+      src: Dockerfile
+      dest: ./Project
+      owner: desouky
+      group: desouky
+      mode: 0644
+
+  - name: build lamp image
+    docker_image:
+      path: ./Project
+      name: lamp
+      state: present
+
+  - name: run mysql container
+    docker_container:
+      image: mysql:5.7
+      name: mysql
+      env:
+        MYSQL_ROOT_PASSWORD: password
+        MYSQL_USER: wpuser
+        MYSQL_PASSWORD: password
+        MYSQL_DATABASE: wordpress
+      volumes:
+        - ./Project/database:/var/lib/mysql
+
+  - name: run lamp container
+    docker_container:
+      image: lamp
+      name: lamp-con
+      state: started
+      links:
+        - "mysql"
+      ports:
+        - "8080:80"
+      volumes:
+        - ./Project/wordpress:/var/www/html
+      env:
+        WORDPRESS_DB_USER: wpuser
+        WORDPRESS_DB_PASSWORD: password
+        WORDPRESS_DB_NAME: wordpress
+

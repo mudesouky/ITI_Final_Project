@@ -1,0 +1,9 @@
+---
+- hosts: all
+  remote_user: desouky
+  become: true 
+  
+  roles:
+    - docker
+    - wordpress
+
